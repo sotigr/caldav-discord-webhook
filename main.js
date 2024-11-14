@@ -71,7 +71,7 @@ function sleep(ms) {
 
             objs = calendarObjects.map(co => getVevent(ical.parseICS(co.data)));
             for (let event of objs) {
-                console.log(event.summary)
+          
                 schedule.scheduleJob(event.start, function () {
                     const hook = new Webhook(webhook);
 
@@ -89,7 +89,7 @@ function sleep(ms) {
         console.log("events refreshed")
     }
     scheduleTasks();
-    let interval = setInterval(scheduleTasks, 10000)//60000 * 10)
+    let interval = setInterval(scheduleTasks, 60000 * 10)
 
     exit = false
 
@@ -103,6 +103,5 @@ function sleep(ms) {
     })
     while (!exit) {
         await sleep(1000);
-    }
-    //   console.log(objs.map(o=>getDavObjField(o, "SUMMARY"))); 
+    } 
 })();
