@@ -161,7 +161,7 @@ function checkAndCreateCache(calendar, calendarObjects) {
         console.log("events refreshed")
     }
     scheduleTasks();
-    let interval = setInterval(scheduleTasks, 60000 * 5)
+    let interval = setInterval(scheduleTasks, 60000 * 10)
 
     // let interval = setInterval(scheduleTasks, 10000)
 
