@@ -32,6 +32,58 @@ function getVevent(obj) {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const cache = {}
+
+function checkAndCreateCache(calendar, calendarObjects) { 
+    let calendarCache = cache[calendar.displayName]
+    let noCache = false
+    
+    if (calendarCache) {
+        // console.log(ical.parseICS(calendar)) 
+
+        objs = calendarObjects.map(co => getVevent(ical.parseICS(co.data)));
+        cacheLen = Object.keys(calendarCache).length
+        if (cacheLen != objs.length) {
+            console.log("length diff")
+            noCache = true;
+        } else {
+            for (let event of objs) {
+                if (!calendarCache[event.uid]) {
+                    console.log("no event")
+                    noCache = true;
+                    break;
+                }
+                if (calendarCache[event.uid] != event.lastmodified.toString()) { 
+                    console.log("no date")
+                    noCache = true;
+                    break;
+                }
+            }
+        } 
+
+    } else {
+        console.log("no calendar")
+        noCache = true;
+    }
+
+    if (noCache) {
+        calendarCache = {}
+        objs = calendarObjects.map(co => getVevent(ical.parseICS(co.data)));
+        for (let event of objs) {
+            if (!calendarCache[event.uid]) {
+                calendarCache[event.uid] = event.lastmodified.toString();
+            }
+        }
+
+        cache[calendar.displayName] = calendarCache;
+        return false
+    } else{
+        return true
+    }
+
+}
+
 (async () => {
     const username = getVar("USERNAME");
     const password = getVar("PASSWORD");
@@ -56,40 +108,62 @@ function sleep(ms) {
 
 
     let scheduleTasks = async () => {
-        await schedule.gracefulShutdown()
+        let refresh = false
         for (let cal of calendarsArr) {
 
             let ccal = calendars.find(c => c.displayName == cal[0])
-            if (!ccal) continue;
-            let webhook = cal[1]
- 
             const calendarObjects = await client.fetchCalendarObjects({
                 // timeRange: { startDate: new Date().toISOString(), endDate: dateAddDays(new Date(), 1).toISOString() },
                 calendar: ccal,
             });
-            
+
+            if (!checkAndCreateCache(ccal, calendarObjects)) {
+                refresh = true
+                break
+            }
+        }
+        
+        console.log('refresh', refresh);
+        if (!refresh) {
+            return
+        }
+        await schedule.gracefulShutdown()
+
+        for (let cal of calendarsArr) {
+
+            let ccal = calendars.find(c => c.displayName == cal[0])
+            if (!ccal) continue; 
+            let webhook = cal[1]
+
+            const calendarObjects = await client.fetchCalendarObjects({
+                // timeRange: { startDate: new Date().toISOString(), endDate: dateAddDays(new Date(), 1).toISOString() },
+                calendar: ccal,
+            });
+
 
             objs = calendarObjects.map(co => getVevent(ical.parseICS(co.data)));
             for (let event of objs) {
-          
                 schedule.scheduleJob(event.start, function () {
                     const hook = new Webhook(webhook);
 
                     hook.setUsername('Bot');
 
-                    if (!event.summary || event.summary == ""){
+
+                    if (!event.summary || event.summary == "") {
                         event.summary = "Untitled event"
                     }
                     hook.send(`Event triggered: ${event.summary}`);
                 });
 
             }
-        } 
+        }
 
         console.log("events refreshed")
     }
     scheduleTasks();
-    let interval = setInterval(scheduleTasks, 60000 * 10)
+    let interval = setInterval(scheduleTasks, 60000 * 5)
+
+    // let interval = setInterval(scheduleTasks, 10000)
 
     exit = false
 
@@ -103,5 +177,5 @@ function sleep(ms) {
     })
     while (!exit) {
         await sleep(1000);
-    } 
+    }
 })();

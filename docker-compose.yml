@@ -1,6 +1,6 @@
 services:
   caldavdiscordwebhook:
-    image: sotig/caldavdiscordwebhook:v0.1
+    image: sotig/caldavdiscordwebhook:v0.2
     container_name: caldavdiscordwebhook_1
     build: 
       context: .
