@@ -1,0 +1,12 @@
+services:
+  caldavdiscordwebhook:
+    image: sotig/caldavdiscordwebhook:v0.1
+    container_name: caldavdiscordwebhook_1
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment: 
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - SERVER_URL=${SERVER_URL}
+      - CALENDARS=${CALENDARS} 
